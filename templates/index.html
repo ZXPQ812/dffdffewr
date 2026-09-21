@@ -1,1 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TikTok Live Bot</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111;
+    --border: #222;
+    --accent: #fe2c55;
+    --accent2: #25f4ee;
+    --text: #e8e8e8;
+    --muted: #555;
+    --green: #3ddc84;
+    --yellow: #f5c518;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 0.25rem;
+  }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 2rem; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.8rem;
+  }
+
+  label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 0.3rem; }
+
+  input[type="text"],
+  input[type="number"],
+  textarea {
+    width: 100%;
+    background: #0d0d0d;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.88rem;
+    padding: 0.55rem 0.8rem;
+    outline: none;
+    transition: border 0.15s;
+    font-family: inherit;
+    resize: vertical;
+  }
+  input:focus, textarea:focus { border-color: var(--accent2); }
+
+  .row { display: grid; grid-template-columns: 1fr 120px; gap: 0.8rem; }
+
+  .account-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 600px) { .account-grid { grid-template-columns: 1fr; } }
+
+  .acc-card {
+    background: #0d0d0d;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+  .acc-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.6rem;
+    color: var(--accent2);
+  }
+  .acc-name.invisible { color: #888; }
+  .acc-name.share     { color: var(--accent); }
+  .acc-name.welcome   { color: var(--green); }
+  .acc-name.notif     { color: var(--yellow); }
+
+  .msg-preview {
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: #0a0a0a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.6rem;
+    font-style: italic;
+    min-height: 2.4rem;
+  }
+
+  .btns { display: flex; gap: 0.8rem; margin-top: 1.4rem; }
+
+  button {
+    flex: 1;
+    padding: 0.75rem 1.2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  button:active { transform: scale(0.98); }
+  #btn-start {
+    background: var(--accent);
+    color: #fff;
+  }
+  #btn-stop {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  button:disabled { opacity: 0.4; cursor: default; }
+
+  .status-bar {
+    margin-top: 1.4rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .status-header {
+    padding: 0.6rem 1rem;
+    background: #111;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 1rem;
+    font-size: 0.82rem;
+    border-bottom: 1px solid #161616;
+  }
+  .status-row:last-child { border-bottom: none; }
+  .status-name { font-weight: 600; }
+  .status-val { color: var(--muted); font-size: 0.78rem; text-align: right; max-width: 60%; }
+
+  .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background: var(--muted);
+  }
+  .dot.running { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>TikTok Live <span>Bot</span></h1>
+  <p class="sub">4 accounts · 24/7 loop · Railway deploy</p>
+
+  <!-- Live URL + Interval -->
+  <div class="card">
+    <div class="card-title">Live Target</div>
+    <div class="row">
+      <div>
+        <label>TikTok Live URL</label>
+        <input type="text" id="live-url" placeholder="https://www.tiktok.com/@username/live" />
+      </div>
+      <div>
+        <label>Interval (sec)</label>
+        <input type="number" id="interval" value="30" min="5" max="3600" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Accounts -->
+  <div class="card">
+    <div class="card-title">Accounts — Cookie + Message</div>
+    <div class="account-grid">
+
+      <!-- Invisible Account -->
+      <div class="acc-card">
+        <div class="acc-name invisible">👻 Invisible Account</div>
+        <div class="msg-preview" id="msg-invisible">
+          <span style="color:#444">— message à définir —</span>
+        </div>
+        <label>Message (optionnel)</label>
+        <input type="text" id="custmsg-invisible" placeholder="Ton message ici..." style="margin-bottom:0.6rem"/>
+        <label>Cookie</label>
+        <textarea id="cookie-invisible" rows="3" placeholder="Colle ton cookie TikTok ici (sessionid=xxx; tt_csrf_token=xxx; ...)"></textarea>
+      </div>
+
+      <!-- Share Account -->
+      <div class="acc-card">
+        <div class="acc-name share">📢 Share Account</div>
+        <div class="msg-preview">Negro a partagé ton live à 1000 personnes.</div>
+        <label>Cookie</label>
+        <textarea id="cookie-share" rows="3" placeholder="Colle ton cookie TikTok ici"></textarea>
+      </div>
+
+      <!-- Welcome Account -->
+      <div class="acc-card">
+        <div class="acc-name welcome">👋 Welcome Account</div>
+        <div class="msg-preview">ntmrlp f2p a rejoint le live.</div>
+        <label>Cookie</label>
+        <textarea id="cookie-welcome" rows="3" placeholder="Colle ton cookie TikTok ici"></textarea>
+      </div>
+
+      <!-- Notification Account -->
+      <div class="acc-card">
+        <div class="acc-name notif">🔔 Notification Account</div>
+        <div class="msg-preview">Ton live sera définitivement banni, si tu enfreints nos règles de sécurités.</div>
+        <label>Cookie</label>
+        <textarea id="cookie-notification" rows="3" placeholder="Colle ton cookie TikTok ici"></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="btns">
+    <button id="btn-start" onclick="startBot()">▶ START BOT</button>
+    <button id="btn-stop" onclick="stopBot()" disabled>■ STOP</button>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar" id="status-bar" style="display:none">
+    <div class="status-header">Live Status</div>
+    <div id="status-rows"></div>
+  </div>
+
+</div>
+
+<script>
+let pollTimer = null;
+
+async function startBot() {
+  const live_url = document.getElementById('live-url').value.trim();
+  if (!live_url) { alert('Enter a TikTok live URL first.'); return; }
+
+  const cookies = {
+    invisible:    document.getElementById('cookie-invisible').value.trim(),
+    share:        document.getElementById('cookie-share').value.trim(),
+    welcome:      document.getElementById('cookie-welcome').value.trim(),
+    notification: document.getElementById('cookie-notification').value.trim(),
+  };
+
+  const custom_messages = {
+    invisible: document.getElementById('custmsg-invisible').value.trim(),
+  };
+
+  const interval = parseInt(document.getElementById('interval').value) || 30;
+
+  const res = await fetch('/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ live_url, cookies, custom_messages, interval }),
+  });
+
+  if (res.ok) {
+    document.getElementById('btn-start').disabled = true;
+    document.getElementById('btn-stop').disabled = false;
+    document.getElementById('status-bar').style.display = 'block';
+    startPolling();
+  }
+}
+
+async function stopBot() {
+  await fetch('/stop', { method: 'POST' });
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-stop').disabled = true;
+  if (pollTimer) clearInterval(pollTimer);
+  pollStatus();
+}
+
+function startPolling() {
+  pollStatus();
+  pollTimer = setInterval(pollStatus, 3000);
+}
+
+async function pollStatus() {
+  try {
+    const res = await fetch('/status');
+    const data = await res.json();
+    renderStatus(data);
+  } catch (e) {}
+}
+
+function renderStatus(data) {
+  const rows = document.getElementById('status-rows');
+  const accounts = data.accounts || {};
+  rows.innerHTML = Object.entries(accounts).map(([name, val]) => `
+    <div class="status-row">
+      <span class="status-name">
+        <span class="dot ${data.running && !val.includes('Stopped') ? 'running' : ''}"></span>
+        ${name}
+      </span>
+      <span class="status-val">${val}</span>
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>
